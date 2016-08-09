@@ -1,1 +1,24 @@
+extends layout
 
+block content
+  div(class="container")
+    h1= title
+    p Welcome to #{title}
+
+    if auth==1
+      div(class="docs-section")
+        div(class="row")
+          include ./pulsanti.jade
+    else
+      div(class="docs-section")
+        form(name="login", action="/login", method="post")
+          div(class="row")
+            div(class="six columns")
+              label(for="username") Username
+              input(class="u-full-width", type="text", placeholder="antani", id="username", name="username")
+          div(class="row")
+            div(class="six columns")
+              label(for="password") Password
+              input(class="u-full-width", placeholder="antani", type="password", name="password")
+
+          input(class="button button-primary", type="submit", value="login")

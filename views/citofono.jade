@@ -1,0 +1,12 @@
+extends layout
+
+block content
+  div(class="container")
+    h1= title
+    div(class="docs-section")
+      div(class="row")
+        div(class="six columns")
+          label(for="notificati") Notificati
+          =notificati
+      div(class="row")
+        include ./pulsanti.jade
