@@ -1,1 +1,147 @@
+#!/usr/bin/env node
 
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app').app;
+var debug = require('debug')('tostapane:server');
+var http = require('http');
+var https = require('https');
+var fs = require('fs');
+var tls = require('tls');
+var net = require('net');
+
+//var auth = require('http-auth');
+//var basic = auth.basic({
+//        realm: "Simon Area.",
+//        file: __dirname + "/data/users.htpasswd"
+//});
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+var ports = normalizePort(process.env.PORT || '3001');
+app.set('ports', ports);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = require('../app').server;
+var servers = require('../app').servers;
+
+var tcpserver = require('../app').tcpserver;
+var tlsserver = require('../app').tlsserver;
+
+var options = {
+    key: fs.readFileSync('tls/server.key'),
+    cert: fs.readFileSync('tls/server.crt')
+};
+
+tcpserver = net.createServer();
+tlsserver = tls.createServer(options);
+
+tcpserver.listen(1338, "0.0.0.0");
+tlsserver.listen(1339, "0.0.0.0");
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+var key = fs.readFileSync('/etc/letsencrypt/live/iot.server.it/privkey.pem');
+var cert = fs.readFileSync('/etc/letsencrypt/live/iot.server.it/cert.pem');
+
+var httpsOptions = {
+        key: fs.readFileSync('/etc/letsencrypt/live/iot.server.it/privkey.pem'),
+        cert: fs.readFileSync('/etc/letsencrypt/live/iot.server.it/cert.pem'),
+        ca: [
+            fs.readFileSync('/etc/letsencrypt/live/iot.server.it/chain.pem'),
+            fs.readFileSync('/etc/letsencrypt/live/iot.server.it/fullchain.pem')
+        ]
+};
+
+//var servers = https.createServer({key: key, cert: cert}, app);
+
+var servers = https.createServer(httpsOptions, app);
+
+servers.listen(ports);
+servers.on('error', onError);
+servers.on('listening', onListenings);
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+eval(fs.readFileSync(__dirname + '/../socket/socketti.js')+'');
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
+
+function onListenings() {
+  var addr = servers.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
